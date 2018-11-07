@@ -1,0 +1,2 @@
+BERT_MODEL_INIT_PATH=$BERT_BASE_DIR/bert_model.ckpt
+BERT_EXP_NAME=none_ft
