@@ -1,0 +1,2 @@
+export BERT_DIR=$BERT_LARGE_DIR
+export BERT_BATCH_SIZE=24
