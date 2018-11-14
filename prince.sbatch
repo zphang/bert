@@ -18,12 +18,13 @@ export PYTHONPATH=/home/zp489/miniconda3/envs/bert/lib/python3.6/site-packages:$
 source $BERT_RUN_CONFIG
 
 echo $SLURM_JOBID - $BERT_RUN_CONFIG - `hostname` >> ~/bert_machine_assignments.txt
-echo Using: [$BERT_MODEL_INIT_PATH]
+echo Using: [$BERT_MODEL_INIT_PATH, $BERT_OUTPUT_DIR, $BERT_DIR, $BERT_MODEL_INIT_PATH]
 
 python run_classifier.py \
   --task_name $BERT_TASK_NAME \
   --do_train \
   --do_eval \
+  --do_predict=true \
   --do_lower_case \
   --data_dir $GLUE_DIR/$BERT_FOL_NAME/ \
   --vocab_file $BERT_DIR/vocab.txt \
