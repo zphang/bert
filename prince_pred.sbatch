@@ -22,7 +22,6 @@ echo Using: [$BERT_MODEL_INIT_PATH, $BERT_OUTPUT_DIR, $BERT_DIR, $BERT_MODEL_INI
 
 python run_classifier.py \
   --task_name $BERT_TASK_NAME \
-  --do_train \
   --do_eval \
   --do_predict=true \
   --do_lower_case \
@@ -30,7 +29,6 @@ python run_classifier.py \
   --data_dir $GLUE_DIR/$BERT_FOL_NAME/ \
   --vocab_file $BERT_DIR/vocab.txt \
   --bert_config_file $BERT_DIR/bert_config.json \
-  --init_checkpoint $BERT_MODEL_INIT_PATH \
   --max_seq_length 128 \
   --train_batch_size $BERT_BATCH_SIZE \
   --learning_rate 2e-5 \

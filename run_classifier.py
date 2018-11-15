@@ -340,7 +340,7 @@ class StsbProcessor(DataProcessor):
       if set_type == "test":
         label = 0.
       else:
-        label = float(tokenization.convert_to_unicode(line[0]))
+        label = float(tokenization.convert_to_unicode(line[-1]))
       examples.append(
           InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
     return examples
@@ -452,6 +452,47 @@ class MnliProcessor(DataProcessor):
     """See base class."""
     return self._create_examples(
         self._read_tsv(os.path.join(data_dir, "test_matched.tsv")), "test")
+
+  def get_labels(self):
+    """See base class."""
+    return ["contradiction", "entailment", "neutral"]
+
+  def _create_examples(self, lines, set_type):
+    """Creates examples for the training and dev sets."""
+    examples = []
+    for (i, line) in enumerate(lines):
+      if i == 0:
+        continue
+      guid = "%s-%s" % (set_type, tokenization.convert_to_unicode(line[0]))
+      text_a = tokenization.convert_to_unicode(line[8])
+      text_b = tokenization.convert_to_unicode(line[9])
+      if set_type == "test":
+        label = "contradiction"
+      else:
+        label = tokenization.convert_to_unicode(line[-1])
+      examples.append(
+          InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+    return examples
+
+
+class MnliMismatchedProcessor(DataProcessor):
+  """Processor for the MultiNLI data set (GLUE version)."""
+
+  def get_train_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+
+  def get_dev_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "dev_mismatched.tsv")),
+        "dev_matched")
+
+  def get_test_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "test_mismatched.tsv")), "test")
 
   def get_labels(self):
     """See base class."""
@@ -934,7 +975,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
 
 def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
                      num_train_steps, num_warmup_steps, use_tpu,
-                     use_one_hot_embeddings, output_mode):
+                     use_one_hot_embeddings, output_mode, do_train):
   """Returns `model_fn` closure for TPUEstimator."""
 
   def model_fn(features, labels, mode, params):  # pylint: disable=unused-argument
@@ -963,14 +1004,15 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
       (assignment_map, initialized_variable_names
       ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
 
-      # ZZZ Drop output
-      for k in list(assignment_map):
-          if k.startswith("output"):
-              del assignment_map[k]
-      for k in list(initialized_variable_names):
-          if k.startswith("output"):
-              del initialized_variable_names[k]
-      # ZZZ END Drop outout
+      if do_train:
+        # ZZZ Drop output
+        for k in list(assignment_map):
+            if k.startswith("output"):
+                del assignment_map[k]
+        for k in list(initialized_variable_names):
+            if k.startswith("output"):
+                del initialized_variable_names[k]
+        # ZZZ END Drop outout
 
       if use_tpu:
 
@@ -985,7 +1027,7 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
     tf.logging.info("**** Trainable Variables ****")
     for var in tvars:
       init_string = ""
-      if var.name in initialized_variable_names:
+      if init_checkpoint and var.name in initialized_variable_names:
         init_string = ", *INIT_FROM_CKPT*"
       tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
                       init_string)
@@ -1153,6 +1195,7 @@ def main(_):
       use_tpu=FLAGS.use_tpu,
       use_one_hot_embeddings=FLAGS.use_tpu,
       output_mode=output_mode,
+      do_train=FLAGS.do_train,
   )
 
   # If TPU is not available, this will fall back to normal Estimator on CPU

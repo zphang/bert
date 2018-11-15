@@ -1,8 +1,10 @@
+from sklearn.metrics import matthews_corrcoef, f1_score
+
 import argparse
 import json
+import os
 import pandas as pd
 
-from sklearn.metrics import matthews_corrcoef, f1_score
 from scipy.stats import pearsonr, spearmanr
 
 import run_classifier
@@ -84,8 +86,14 @@ def compute_metrics(task_name, pred_srs, label_srs):
 def load_labels(task_name, data_dir):
     processor = PROCESSORS[task_name]()
     examples = processor.get_dev_examples(data_dir)
-    label2idx = {label: num for (num, label) in enumerate(processor.get_labels())}
-    label_srs = pd.Series([label2idx[example.label] for example in examples])
+    output_mode = OUTPUT_MODES[task_name]
+    if output_mode == "classification":
+        label2idx = {label: num for (num, label) in enumerate(processor.get_labels())}
+        label_srs = pd.Series([label2idx[example.label] for example in examples])
+    elif output_mode == "regression":
+        label_srs = pd.Series([example.label for example in examples])
+    else:
+        raise KeyError(output_mode)
     return label_srs
 
 
@@ -95,7 +103,7 @@ def load_preds(task_name, pred_file_path):
     if output_mode == "classification":
         pred_srs = pred_df.idxmax(axis=1)
     elif output_mode == "regression":
-        pred_srs = pred_df[:, 0]
+        pred_srs = pred_df[0]
     else:
         raise KeyError(output_mode)
     return pred_srs
@@ -107,20 +115,40 @@ def compute_metrics_from_paths(task_name, pred_file_path, task_data_dir):
     return compute_metrics(task_name, pred_srs, label_srs)
 
 
+def get_default_task_data_dir(task_name):
+    default_fol_names = {
+        "cola": "CoLA",
+        "sst": "SST-2",
+        "mrpc": "MRPC",
+        "stsb": "STS-B",
+        "qqp": "QQP",
+        "mnli": "MNLI",
+        "qnli": "QNLI",
+        "rte": "RTE",
+    }
+    glue_path = os.environ["GLUE_DIR"]
+    return os.path.join(glue_path, default_fol_names[task_name])
+
+
 def main():
     parser = argparse.ArgumentParser(description='evaluation')
     parser.add_argument('--task-name', required=True)
     parser.add_argument('--pred-file-path', required=True)
-    parser.add_argument('--task-data-dir', required=True)
+    parser.add_argument('--task-data-dir', default=None)
     parser.add_argument('--no-print', action="store_true")
     parser.add_argument('--output-path', required=False, default=None)
     args = parser.parse_args()
-    metrics = compute_metrics_from_paths(args.task_name, args.pred_file_path, args.task_data_dir)
+    task_name = args.task_name.lower()
+    if args.task_data_dir is None:
+        task_data_dir = get_default_task_data_dir(args.task_name)
+    else:
+        task_data_dir = args.task_data_dir
+    metrics = compute_metrics_from_paths(task_name, args.pred_file_path, task_data_dir)
     if not args.no_print:
         print(metrics)
     if args.output_path is not None:
         with open(args.output_path, "w") as f:
-            f.write(json.dumps(metrics, indent=2))
+            f.write(json.dumps(metrics, indent=2) + "\n")
 
 
 if __name__ == "__main__":
