@@ -1269,7 +1269,6 @@ def main(_):
       file_based_convert_examples_to_features(test_examples, label_list,
                                               FLAGS.max_seq_length, tokenizer,
                                               test_file, output_mode)
-
       test_drop_remainder = True if FLAGS.use_tpu else False
       test_input_fn = file_based_input_fn_builder(
           input_file=test_file,
@@ -1280,6 +1279,39 @@ def main(_):
       )
       predict(estimator, eval_input_fn, "val", len(eval_examples), output_mode)
       predict(estimator, test_input_fn, "test", len(test_examples), output_mode)
+
+      # HACK for MNLI-mismatched
+      if task_name == "mnli":
+        mm_processor = MnliMismatchedProcessor()
+        mm_eval_examples = mm_processor.get_dev_examples(FLAGS.data_dir)
+        mm_eval_file = os.path.join(FLAGS.output_dir, "mm_eval.tf_record")
+        file_based_convert_examples_to_features(mm_eval_examples, label_list,
+                                                FLAGS.max_seq_length, tokenizer,
+                                                mm_eval_file, output_mode)
+        mm_eval_drop_remainder = True if FLAGS.use_tpu else False
+        mm_eval_input_fn = file_based_input_fn_builder(
+            input_file=mm_eval_file,
+            seq_length=FLAGS.max_seq_length,
+            is_training=False,
+            drop_remainder=mm_eval_drop_remainder,
+            output_mode=output_mode,
+        )
+        predict(estimator, mm_eval_input_fn, "mm_val", len(mm_eval_examples), output_mode)
+        
+        mm_test_examples = mm_processor.get_test_examples(FLAGS.data_dir)
+        mm_test_file = os.path.join(FLAGS.output_dir, "mm_test.tf_record")
+        file_based_convert_examples_to_features(mm_test_examples, label_list,
+                                                FLAGS.max_seq_length, tokenizer,
+                                                mm_test_file, output_mode)
+        mm_test_drop_remainder = True if FLAGS.use_tpu else False
+        mm_test_input_fn = file_based_input_fn_builder(
+            input_file=mm_test_file,
+            seq_length=FLAGS.max_seq_length,
+            is_training=False,
+            drop_remainder=mm_test_drop_remainder,
+            output_mode=output_mode,
+        )
+        predict(estimator, mm_test_input_fn, "mm_test", len(mm_test_examples), output_mode)
 
 
 def predict(estimator, predict_input_fn, phase, n_examples, output_mode):

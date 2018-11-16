@@ -13,6 +13,11 @@ def collate_metrics(base_path):
                 collated[task_name] = json.loads(f.read())
         except FileNotFoundError:
             print("Skipping {}".format(task_name))
+    try:
+        with open(os.path.join(base_path, "mnli", "mm_val_metrics.txt"), "r") as f:
+            collated["mnli-mm"] = json.loads(f.read())
+    except FileNotFoundError:
+        print("Skipping {}".format("mnli-mm"))
     return collated
 
 
@@ -33,7 +38,7 @@ def format_row(collated_metrics):
         "",
         "",
         "",
-        dict_get(collated_metrics, "mnli", "acc") * 100,
+        "",
         dict_get(collated_metrics, "qnli", "acc") * 100,
         dict_get(collated_metrics, "rte", "acc") * 100,
         56.3,
@@ -47,8 +52,8 @@ def format_row(collated_metrics):
         dict_get(collated_metrics, "stsb", "pearson") * 100,
         dict_get(collated_metrics, "stsb", "spearmanr") * 100,
         "",
-        -1,
-        -1,
+        dict_get(collated_metrics, "mnli", "acc") * 100,
+        dict_get(collated_metrics, "mnli-mm", "acc") * 100,
     ]))
 
 

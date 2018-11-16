@@ -38,7 +38,7 @@ python run_classifier.py \
   --seed=${BERT_SEED:-1} \
   --output_dir $BERT_OUTPUT_DIR
 
-python evaluate.py \
+python evaluation/evaluate.py \
 	--task-name $BERT_TASK_NAME \
 	--pred-file-path $BERT_OUTPUT_DIR/val_results.tsv \
 	--output-path $BERT_OUTPUT_DIR/val_metrics.txt
