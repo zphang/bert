@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from evaluate import OUTPUT_MODES, PROCESSORS
+from evaluation.evaluate import OUTPUT_MODES, PROCESSORS
 
 OUTPUT_NAMES = {
     "cola": "CoLA",

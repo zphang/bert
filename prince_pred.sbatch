@@ -11,7 +11,7 @@
 module load tensorflow/python3.6/1.5.0
 source activate bert
 export PYTHONPATH=/home/zp489/miniconda3/envs/bert/lib/python3.6/site-packages:$PYTHONPATH
-
+export PYTHONPATH=/home/zp489/code/bowman/bert:$PYTHONPATH
 
 # BERT Config
 #source path_config.sh
@@ -19,6 +19,7 @@ source $BERT_RUN_CONFIG
 
 echo $SLURM_JOBID - $BERT_RUN_CONFIG - `hostname` >> ~/bert_machine_assignments.txt
 echo Using: [$BERT_MODEL_INIT_PATH, $BERT_OUTPUT_DIR, $BERT_DIR, $BERT_MODEL_INIT_PATH]
+echo Seed: $BERT_RAND_SEED
 
 python run_classifier.py \
   --task_name $BERT_TASK_NAME \
@@ -33,7 +34,7 @@ python run_classifier.py \
   --train_batch_size $BERT_BATCH_SIZE \
   --learning_rate 2e-5 \
   --num_train_epochs 3.0 \
-  --seed=${BERT_SEED:-1} \
+  --seed=${BERT_RAND_SEED:-1} \
   --output_dir $BERT_OUTPUT_DIR
 
 python evaluation/evaluate.py \
