@@ -28,6 +28,7 @@ python run_classifier.py \
   --do_train \
   --do_eval \
   --do_predict=true \
+  --do_test=true \
   --do_lower_case \
   --save_checkpoints_steps 1000000 \
   --data_dir $GLUE_DIR/$BERT_FOL_NAME/ \

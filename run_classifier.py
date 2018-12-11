@@ -22,6 +22,7 @@ import collections
 import csv
 import os
 import modeling
+import numpy as np
 import optimization
 import tokenization
 import tensorflow as tf
@@ -75,6 +76,10 @@ flags.DEFINE_bool(
     "do_predict", False,
     "Whether to run the model in inference mode on the test set.")
 
+flags.DEFINE_bool(
+    "do_test", False,
+    "Whether to run the model in inference mode on the test set.")
+
 flags.DEFINE_integer("train_batch_size", 32, "Total batch size for training.")
 
 flags.DEFINE_integer("eval_batch_size", 8, "Total batch size for eval.")
@@ -85,6 +90,9 @@ flags.DEFINE_float("learning_rate", 5e-5, "The initial learning rate for Adam.")
 
 flags.DEFINE_float("num_train_epochs", 3.0,
                    "Total number of training epochs to perform.")
+
+flags.DEFINE_float("num_train_samples", -1,
+                   "Sample number of training examples.")
 
 flags.DEFINE_float(
     "warmup_proportion", 0.1,
@@ -158,7 +166,7 @@ class InputFeatures(object):
 class DataProcessor(object):
   """Base class for data converters for sequence classification data sets."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """Gets a collection of `InputExample`s for the train set."""
     raise NotImplementedError()
 
@@ -188,10 +196,12 @@ class DataProcessor(object):
 class ColaProcessor(DataProcessor):
   """Processor for the Cola data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -229,10 +239,12 @@ class ColaProcessor(DataProcessor):
 class SstProcessor(DataProcessor):
   """Processor for the SST-2 data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -268,11 +280,12 @@ class SstProcessor(DataProcessor):
 
 class MrpcProcessor(DataProcessor):
   """Processor for the MRPC data set (GLUE version)."""
-
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -309,10 +322,12 @@ class MrpcProcessor(DataProcessor):
 class StsbProcessor(DataProcessor):
   """Processor for the STS-B data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -349,10 +364,12 @@ class StsbProcessor(DataProcessor):
 class QqpProcessor(DataProcessor):
   """Processor for the QQP data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -394,10 +411,12 @@ class QqpProcessor(DataProcessor):
 class QnliProcessor(DataProcessor):
   """Processor for the QNLI data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -437,10 +456,12 @@ class QnliProcessor(DataProcessor):
 class MnliProcessor(DataProcessor):
   """Processor for the MultiNLI data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -478,10 +499,12 @@ class MnliProcessor(DataProcessor):
 class MnliMismatchedProcessor(DataProcessor):
   """Processor for the MultiNLI data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -519,10 +542,12 @@ class MnliMismatchedProcessor(DataProcessor):
 class RteProcessor(DataProcessor):
   """Processor for the RTE data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -561,10 +586,12 @@ class RteProcessor(DataProcessor):
 class SnliProcessor(DataProcessor):
   """Processor for the SNLI data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -593,10 +620,12 @@ class SnliProcessor(DataProcessor):
 class BcsProcessor(DataProcessor):
   """Processor for the fake sentence data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -633,10 +662,12 @@ class BcsProcessor(DataProcessor):
 class WnliProcessor(DataProcessor):
   """Processor for the WNLI data set (GLUE version)."""
 
-  def get_train_examples(self, data_dir):
+  def get_train_examples(self, data_dir, num_train_samples):
     """See base class."""
-    return self._create_examples(
-        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+    return subsample_examples(
+      self._create_examples(self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"),
+      num_train_samples,
+    )
 
   def get_dev_examples(self, data_dir):
     """See base class."""
@@ -718,6 +749,18 @@ class XnliProcessor(DataProcessor):
   def get_labels(self):
     """See base class."""
     return ["contradiction", "entailment", "neutral"]
+
+
+def subsample_examples(examples, num_samples, if_over_set_to_length=True):
+  if num_samples == -1:
+    return examples
+  elif num_samples > len(examples):
+    if if_over_set_to_length:
+      return examples
+    else:
+      raise RuntimeError()
+  else:
+    return list(np.random.choice(examples, int(num_samples), replace=False))
 
 
 def convert_single_example(ex_index, example, label_list, max_seq_length,
@@ -1180,7 +1223,7 @@ def main(_):
   num_train_steps = None
   num_warmup_steps = None
   if FLAGS.do_train:
-    train_examples = processor.get_train_examples(FLAGS.data_dir)
+    train_examples = processor.get_train_examples(FLAGS.data_dir, FLAGS.num_train_samples)
     num_train_steps = int(
         len(train_examples) / FLAGS.train_batch_size * FLAGS.num_train_epochs)
     num_warmup_steps = int(num_train_steps * FLAGS.warmup_proportion)
@@ -1264,21 +1307,23 @@ def main(_):
           writer.write("%s = %s\n" % (key, str(result[key])))
 
     if FLAGS.do_predict:
-      test_examples = processor.get_test_examples(FLAGS.data_dir)
-      test_file = os.path.join(FLAGS.output_dir, "test.tf_record")
-      file_based_convert_examples_to_features(test_examples, label_list,
-                                              FLAGS.max_seq_length, tokenizer,
-                                              test_file, output_mode)
-      test_drop_remainder = True if FLAGS.use_tpu else False
-      test_input_fn = file_based_input_fn_builder(
-          input_file=test_file,
-          seq_length=FLAGS.max_seq_length,
-          is_training=False,
-          drop_remainder=test_drop_remainder,
-          output_mode=output_mode,
-      )
       predict(estimator, eval_input_fn, "val", len(eval_examples), output_mode)
-      predict(estimator, test_input_fn, "test", len(test_examples), output_mode)
+
+      if FLAGS.do_test:
+        test_examples = processor.get_test_examples(FLAGS.data_dir)
+        test_file = os.path.join(FLAGS.output_dir, "test.tf_record")
+        file_based_convert_examples_to_features(test_examples, label_list,
+                                                FLAGS.max_seq_length, tokenizer,
+                                                test_file, output_mode)
+        test_drop_remainder = True if FLAGS.use_tpu else False
+        test_input_fn = file_based_input_fn_builder(
+            input_file=test_file,
+            seq_length=FLAGS.max_seq_length,
+            is_training=False,
+            drop_remainder=test_drop_remainder,
+            output_mode=output_mode,
+        )
+        predict(estimator, test_input_fn, "test", len(test_examples), output_mode)
 
       # HACK for MNLI-mismatched
       if task_name == "mnli":
@@ -1297,21 +1342,22 @@ def main(_):
             output_mode=output_mode,
         )
         predict(estimator, mm_eval_input_fn, "mm_val", len(mm_eval_examples), output_mode)
-        
-        mm_test_examples = mm_processor.get_test_examples(FLAGS.data_dir)
-        mm_test_file = os.path.join(FLAGS.output_dir, "mm_test.tf_record")
-        file_based_convert_examples_to_features(mm_test_examples, label_list,
-                                                FLAGS.max_seq_length, tokenizer,
-                                                mm_test_file, output_mode)
-        mm_test_drop_remainder = True if FLAGS.use_tpu else False
-        mm_test_input_fn = file_based_input_fn_builder(
-            input_file=mm_test_file,
-            seq_length=FLAGS.max_seq_length,
-            is_training=False,
-            drop_remainder=mm_test_drop_remainder,
-            output_mode=output_mode,
-        )
-        predict(estimator, mm_test_input_fn, "mm_test", len(mm_test_examples), output_mode)
+
+        if FLAGS.do_test:
+          mm_test_examples = mm_processor.get_test_examples(FLAGS.data_dir)
+          mm_test_file = os.path.join(FLAGS.output_dir, "mm_test.tf_record")
+          file_based_convert_examples_to_features(mm_test_examples, label_list,
+                                                  FLAGS.max_seq_length, tokenizer,
+                                                  mm_test_file, output_mode)
+          mm_test_drop_remainder = True if FLAGS.use_tpu else False
+          mm_test_input_fn = file_based_input_fn_builder(
+              input_file=mm_test_file,
+              seq_length=FLAGS.max_seq_length,
+              is_training=False,
+              drop_remainder=mm_test_drop_remainder,
+              output_mode=output_mode,
+          )
+          predict(estimator, mm_test_input_fn, "mm_test", len(mm_test_examples), output_mode)
 
 
 def predict(estimator, predict_input_fn, phase, n_examples, output_mode):
